@@ -1,9 +1,12 @@
 import axios from 'axios';
 
-async function obtenerP2PBinance(tipoOperacion = 'BUY') {
+async function obtenerP2PBinance(tipoOperacion) {
     try {
         // El endpoint interno que usa la web de Binance para el P2P
         const url = 'https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search';
+
+
+        console.log("tipo", tipoOperacion)
 
         // Los filtros exactos que necesita Binance para responder
         const payload = {
@@ -12,6 +15,7 @@ async function obtenerP2PBinance(tipoOperacion = 'BUY') {
             merchantCheck: false,    // true si solo quieres comerciantes verificados
             page: 1,                 // Primera página de resultados
             rows: 10,                // Traer los primeros 10 anuncios
+            transAmount: "20000",
             payTypes: [],            // Puedes filtrar por banco, ej: ['Banesco']
             publisherType: null,
             tradeType: tipoOperacion // 'BUY' para ver a cuánto compran, 'SELL' para venta
@@ -81,3 +85,4 @@ export async function mostrarP2PBinance() {
 
 }
 
+console.log(mostrarP2PBinance());
