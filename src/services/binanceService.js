@@ -1,4 +1,5 @@
 import axios from 'axios';
+import {sendTelegramAlert} from '../Alert/telegramLogger.js'
 
 async function obtenerP2PBinance(tipoOperacion) {
     try {
@@ -50,39 +51,61 @@ async function obtenerP2PBinance(tipoOperacion) {
 
     } catch (error) {
         console.error(`Error consultando P2P (${tipoOperacion}):`, error.message);
+
+        sendTelegramAlert({
+            context: "ERROR EN BINANCE",
+            customMessage: "EL endpoint de Binance no esta funcionando... revisar cuanto antes!",
+            error:(error)
+        });
+
+
         return null;
     }
 }
 
-// --- CÓMO USARLO ---
+
 export async function mostrarP2PBinance() {
-    console.log("Consultando Binance P2P directo...");
     
-    // Al pasar 'BUY', ves los anuncios de compra (el precio que paga el usuario para adquirir USDT)
-    const compra = await obtenerP2PBinance('BUY');
-    
-    // Al pasar 'SELL', ves los anuncios de venta (a cuánto puedes cambiar tus USDT a bolívares)
-    const venta = await obtenerP2PBinance('SELL');
+    try {
+        
+        console.log("Consultando Binance P2P directo...");
+        
+        // Al pasar 'BUY', ves los anuncios de compra (el precio que paga el usuario para adquirir USDT)
+        const compra = await obtenerP2PBinance('BUY');
+        
+        // Al pasar 'SELL', ves los anuncios de venta (a cuánto puedes cambiar tus USDT a bolívares)
+        const venta = await obtenerP2PBinance('SELL');
 
-    const compraPromedioUsdt = compra?.promedioTop5;
-    const ventaPromedioUsdt = venta?.promedioTop5
-    const promedioUsdt = (compraPromedioUsdt + ventaPromedioUsdt) / 2;
+        if(!compra || !venta){
+            return null;
 
-    console.log("📊 RESULTADOS REALES DE BINANCE P2P:");
-    console.log("Compra (Top 5 Promedio):", compraPromedioUsdt, "Bs");
-    console.log("Venta (Top 5 Promedio):", ventaPromedioUsdt, "Bs");
+        }
 
-    
+        const compraPromedioUsdt = compra?.promedioTop5;
+        const ventaPromedioUsdt = venta?.promedioTop5
+        const promedioUsdt = (compraPromedioUsdt + ventaPromedioUsdt) / 2;
 
-    const usdt  = {
-        usdtCompra: compraPromedioUsdt,
-        usdtVenta: ventaPromedioUsdt,
-        promedioUsdt: promedioUsdt,
-        actualizado: new Date().toISOString()
-    };
+        console.log("📊 RESULTADOS REALES DE BINANCE P2P:");
+        console.log("Compra (Top 5 Promedio):", compraPromedioUsdt, "Bs");
+        console.log("Venta (Top 5 Promedio):", ventaPromedioUsdt, "Bs");
 
-    return usdt;
+        
+
+        const usdt  = {
+            usdtCompra: compraPromedioUsdt,
+            usdtVenta: ventaPromedioUsdt,
+            promedioUsdt: promedioUsdt,
+            actualizado: new Date().toISOString()
+        };
+
+        return usdt;
+
+    } catch (error) {
+        
+        console.log("error al obtener binance: ", error)
+
+        return null;
+    }
 
 }
 
-console.log(mostrarP2PBinance());

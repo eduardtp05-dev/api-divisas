@@ -1,4 +1,6 @@
 import axios from 'axios';
+import {sendTelegramAlert} from '../Alert/telegramLogger.js'
+        
 
 export async function obtenerDolarApi() {
     try {
@@ -22,7 +24,18 @@ export async function obtenerDolarApi() {
 
     } catch (error) {
         console.error("Error al consultar las monedas en DolarApi:", error.message);
+
+        
+        sendTelegramAlert({
+            context: "ERROR EN DOLAR API",
+            customMessage: "Dolar API no está funcionando correctamente",
+            error:(error)
+        });
+
         return null;
     }
 }
+
+
+
 
