@@ -1,5 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 
+import {ObtenerTasas} from '../src/routes/divisas.js'
+
 import { redis } from '../src/config/redis.js';
 
 
@@ -29,8 +31,19 @@ async function ejecutarCierreDiario() {
     console.log('[CRON] Obteniendo datos de Redis...');
 
     // 3. Traer los strings JSON guardados en Redis
-    const jsonOficialesTasas = await redis.get('tasas:bcv'); 
-    const jsonUsdtTasas = await redis.get('tasas:usdt');     
+    let jsonOficialesTasas = await redis.get('tasas:bcv'); 
+    let jsonUsdtTasas = await redis.get('tasas:usdt');    
+    
+    if(!jsonOficialesTasas || !jsonUsdtTasas){
+
+      await ObtenerTasas();
+
+      jsonOficialesTasas = await redis.get('tasas:bcv'); 
+      jsonUsdtTasas = await redis.get('tasas:usdt'); 
+
+      
+
+    }
 
     // 4. Parsear los JSONs
     const oficiales = jsonOficialesTasas ? JSON.parse(jsonOficialesTasas) : {};

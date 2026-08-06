@@ -8,6 +8,38 @@ import {ObtenerBinanceVzla} from '../services/binanceVzlaService.js'
 const router = Router();
 
 router.get('/tasas', async (req, res) => {
+    try{
+
+
+        const tasas =  await ObtenerTasas();
+
+        const datosBcv = tasas.bcv;
+        const datosUsdt = tasas.usdt;
+
+
+        res.set('Cache-Control', 'public, max-age=200, s-maxage=300');
+
+        return res.json({
+            oficial: datosBcv,
+            cripto: datosUsdt,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        return res.status(500).json({ error: `error: ${error}` });
+    }
+});
+
+
+
+
+
+
+export default router;
+
+
+export async function ObtenerTasas(){
+
     try {
         // 1. Intentar leer ambas claves de Redis en paralelo
         const [cacheBcv, cacheUsdt] = await Promise.all([
@@ -79,21 +111,19 @@ router.get('/tasas', async (req, res) => {
 
         // 4. Responder unificado
 
-        console.log("datos del bcv: ", datosBcv)
+        console.log("datos del bcv: ", datosBcv);
 
-        res.set('Cache-Control', 'public, max-age=200, s-maxage=300');
 
-        return res.json({
-            oficial: datosBcv,
-            cripto: datosUsdt,
-            timestamp: new Date().toISOString()
-        });
+        return{
+            bcv: datosBcv,
+            usdt: datosUsdt
+        }
 
-    } catch (error) {
-        return res.status(500).json({ error: `error: ${error}` });
+        
+
+    } catch(error){
+        console.log(error);
+
     }
-});
-
-export default router;
-
+}
 
