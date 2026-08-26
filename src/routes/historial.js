@@ -12,7 +12,9 @@ dotenv.config({ path: path.resolve(process.cwd(), '..','.env') });
 const router = Router();
 
 // Ruta a la BD: se puede sobreescribir con DB_PATH (ej. en VPS donde el cron crea la DB en la raíz del sistema)
-const dbPath = process.env.DB_PATH || fileURLToPath(new URL('../../tasas.db', import.meta.url));
+const dbPath = process.env.DB_PATH;
+
+
 
 router.get('/historial', async (req, res) => {
     try {
