@@ -32,7 +32,7 @@ router.get('/historial', async (req, res) => {
         return res.json(historial);
 
     } catch (error) {
-        return res.status(500).json({ error: `error: ${error}` });
+        return res.status(500).json({ error: `error: ${error} (intentó abrir: ${dbPath})` });
     }
 });
 
