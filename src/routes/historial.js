@@ -2,6 +2,13 @@ import { Router } from 'express';
 import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
 
+import dotenv from 'dotenv';
+import path from 'path';
+
+
+// Forzamos a Node a buscar el .env exactamente en la raíz del proyecto actual
+dotenv.config({ path: path.resolve(process.cwd(), '..','.env') });
+
 const router = Router();
 
 // Ruta a la BD: se puede sobreescribir con DB_PATH (ej. en VPS donde el cron crea la DB en la raíz del sistema)
