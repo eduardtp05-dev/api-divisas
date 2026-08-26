@@ -1,11 +1,15 @@
 import { DatabaseSync } from 'node:sqlite';
+import { fileURLToPath } from 'node:url';
 
 import {ObtenerTasas} from '../src/routes/divisas.js'
 
 import { redis } from '../src/config/redis.js';
 
 
-const db = new DatabaseSync('tasas.db');
+// Ruta a la BD: se puede sobreescribir con DB_PATH (ej. en VPS donde el cron corre desde la raíz del sistema)
+const dbPath = process.env.DB_PATH || fileURLToPath(new URL('../tasas.db', import.meta.url));
+
+const db = new DatabaseSync(dbPath);
 
 // Tabla con historial por ID único de la API
 db.exec(`

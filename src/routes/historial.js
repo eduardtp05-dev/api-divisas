@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 const router = Router();
 
-// Ruta absoluta a la BD SQLite (tasas.db en la raíz del proyecto)
-const dbPath = fileURLToPath(new URL('../../tasas.db', import.meta.url));
+// Ruta a la BD: se puede sobreescribir con DB_PATH (ej. en VPS donde el cron crea la DB en la raíz del sistema)
+const dbPath = process.env.DB_PATH || fileURLToPath(new URL('../../tasas.db', import.meta.url));
 
 router.get('/historial', async (req, res) => {
     try {
