@@ -2,12 +2,13 @@ import { Router } from 'express';
 import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
 
-import dotenv from 'dotenv';
+
 import path from 'path';
 
-
+import dotenv from 'dotenv';
+dotenv.config();
 // Forzamos a Node a buscar el .env exactamente en la raíz del proyecto actual
-dotenv.config({ path: path.resolve(process.cwd(), '..','.env') });
+
 
 const router = Router();
 
