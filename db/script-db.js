@@ -58,7 +58,8 @@ async function ejecutarCierreDiario() {
     const euroRate = oficiales.euro || 0;
     const usdtRate = usdtData.promedioUsdt || 0;
 
-    const fechaHoy = new Date().toISOString().split('T')[0]; // '2026-07-26'
+    // Fecha en hora de Venezuela (toISOString usa UTC y a las 23:00 ya sería el día siguiente)
+    const fechaHoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Caracas' }).format(new Date());
 
     // 5. Guardar en SQLite con UPSERT (por si corre dos veces hoy)
     const stmt = db.prepare(`
