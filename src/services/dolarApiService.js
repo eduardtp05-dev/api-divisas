@@ -1,5 +1,7 @@
 import axios from 'axios';
 import {sendTelegramAlert} from '../Alert/telegramLogger.js'
+
+const esValido = (n) => Number.isFinite(n) && n > 0;
         
 
 export async function obtenerDolarApi() {
@@ -18,6 +20,16 @@ export async function obtenerDolarApi() {
             euro: datosEuro ? datosEuro.promedio : null,
             actualizado: datosDolar ? datosDolar.fechaActualizacion : new Date().toISOString()
         };
+
+        if (!esValido(cotizaciones.dolar) || !esValido(cotizaciones.euro)) {
+            sendTelegramAlert({
+                context: "DATOS INVÁLIDOS EN DOLAR API",
+                customMessage: `DolarApi respondió pero sin números válidos: dólar=${cotizaciones.dolar}, euro=${cotizaciones.euro}`,
+                error: new Error("DolarApi no devolvió números mayores a cero (USD/EUR)")
+            });
+            console.log("⚠️ DolarApi devolvió datos inválidos:", cotizaciones);
+            return null;
+        }
 
         console.log("📍 Cotizaciones listas para Redis:", cotizaciones);
         return cotizaciones;

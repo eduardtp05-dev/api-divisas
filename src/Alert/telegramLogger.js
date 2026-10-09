@@ -1,8 +1,8 @@
 import dotenv from 'dotenv';
-import path from 'path';
+import { fileURLToPath } from 'node:url';
 
-// Forzamos a Node a buscar el .env exactamente en la raíz del proyecto actual
-dotenv.config({ path: path.resolve(process.cwd(), '..','.env') });
+// Ruta absoluta al .env de la raíz del proyecto (independiente del cwd, ej. cron)
+dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)) });
 
 
 

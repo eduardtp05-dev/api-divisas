@@ -1,6 +1,8 @@
 import axios from 'axios';
 import {sendTelegramAlert} from '../Alert/telegramLogger.js'
 
+const esValido = (n) => Number.isFinite(n) && n > 0;
+
 async function obtenerP2PBinance(tipoOperacion) {
     try {
         // El endpoint interno que usa la web de Binance para el P2P
@@ -84,6 +86,16 @@ export async function mostrarP2PBinance() {
         const compraPromedioUsdt = compra?.promedioTop5;
         const ventaPromedioUsdt = venta?.promedioTop5
         const promedioUsdt = (compraPromedioUsdt + ventaPromedioUsdt) / 2;
+
+        if (!esValido(compraPromedioUsdt) || !esValido(ventaPromedioUsdt)) {
+            sendTelegramAlert({
+                context: "DATOS INVÁLIDOS EN BINANCE P2P",
+                customMessage: `Binance respondió pero sin números válidos: compra=${compraPromedioUsdt}, venta=${ventaPromedioUsdt}`,
+                error: new Error("Binance P2P no devolvió números mayores a cero")
+            });
+            console.log("⚠️ Binance P2P devolvió datos inválidos.");
+            return null;
+        }
 
         console.log("📊 RESULTADOS REALES DE BINANCE P2P:");
         console.log("Compra (Top 5 Promedio):", compraPromedioUsdt, "Bs");

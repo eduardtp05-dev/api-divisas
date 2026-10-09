@@ -2,8 +2,9 @@ import { Router } from 'express';
 import { mostrarP2PBinance } from '../services/binanceService.js';
 import { obtenerDolarApi } from '../services/dolarApiService.js';
 import { redis } from '../config/redis.js'; // Tu instancia de redis
-import { obtenerVzlaApi } from '../services/dolarVzlaService.js';
-import {ObtenerBinanceVzla} from '../services/binanceVzlaService.js'
+import { obtenerBcvCotizave, obtenerUsdtCotizave } from '../services/cotizaveService.js';
+import { obtenerBcvToday } from '../services/bcvTodayService.js';
+import { obtenerBcvScraper } from '../services/bcvScraperService.js';
 
 const router = Router();
 
@@ -63,16 +64,38 @@ export async function ObtenerTasas(){
             } 
             else if(!datosBcvDolarApi){
 
-                console.log("🔄 DolarApi falló... Buscando en dolarVzla");
-                let datosBcvDolarVzla = await obtenerVzlaApi();
+                console.log("🔄 DolarApi falló... Buscando en Cotizave");
+                let datosBcvCotizave = await obtenerBcvCotizave();
 
-                if(datosBcvDolarVzla){
-                    await redis.set('tasas:bcv', JSON.stringify(datosBcvDolarVzla), 'EX', 7200); // 2h
-                    datosBcv = datosBcvDolarVzla
-                } 
+                if(datosBcvCotizave){
+                    await redis.set('tasas:bcv', JSON.stringify(datosBcvCotizave), 'EX', 7200); // 2h
+                    datosBcv = datosBcvCotizave
+                }
                 else{
-                    console.log("❌Error, ninguna fuente anterior funcionó. TASA BCV NO DISPONIBLE");
-                    datosBcv = null;
+
+                    console.log("🔄 Cotizave falló... Buscando en bcv.today");
+                    let datosBcvToday = await obtenerBcvToday();
+
+                    if(datosBcvToday){
+                        await redis.set('tasas:bcv', JSON.stringify(datosBcvToday), 'EX', 7200); // 2h
+                        datosBcv = datosBcvToday
+                    }
+                    else{
+
+                        console.log("🔄 bcv.today falló... Usando el scraper del BCV (última barrera)");
+                        let datosBcvScraper = await obtenerBcvScraper();
+
+                        if(datosBcvScraper){
+                            await redis.set('tasas:bcv', JSON.stringify(datosBcvScraper), 'EX', 7200); // 2h
+                            datosBcv = datosBcvScraper
+                        }
+                        else{
+                            console.log("❌Error, ninguna fuente funcionó. TASA BCV NO DISPONIBLE");
+                            datosBcv = null;
+                        }
+
+                    }
+
                 }
 
 
@@ -92,15 +115,16 @@ export async function ObtenerTasas(){
             console.log("\n\n\n\nLOS DATOS DE BINANCE USDT SON: \n\n\n\n", datosUsdt);
 
             if (datosUsdt){
-                await redis.set('tasas:usdt', JSON.stringify(datosUsdt), 'EX', 7200); // 2h
+                await redis.set('tasas:usdt', JSON.stringify(datosUsdt), 'EX', 900); // 15 min
             } else if(!datosUsdt){
 
-                console.log("🔄 No funciono el endpoint de binance, consultando API de emergencia");
+                console.log("🔄 No funciono el endpoint de binance, consultando Cotizave");
 
-                let datosUsdtEmergencia = await  ObtenerBinanceVzla();
+                let datosUsdtCotizave = await obtenerUsdtCotizave();
 
-                if(datosUsdtEmergencia){
-                    datosUsdt = datosUsdtEmergencia;
+                if(datosUsdtCotizave){
+                    await redis.set('tasas:usdt', JSON.stringify(datosUsdtCotizave), 'EX', 900); // 15 min
+                    datosUsdt = datosUsdtCotizave;
                 } else{
                     console.log("APP CAIDA");
                 }
