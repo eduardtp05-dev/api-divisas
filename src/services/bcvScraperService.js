@@ -21,20 +21,39 @@ function parsearNumero(texto) {
     return parseFloat(texto.trim().replace(/\./g, '').replace(',', '.'));
 }
 
+// La "Fecha Valor" es la fecha en que entra en vigencia la tasa publicada.
+// La página trae varios <meta property="dc:date"> (el widget de archivo tiene los suyos):
+// el PRIMERO es el de la tasa vigente/próxima, los demás son del archivo de meses.
+function parsearFechaValor(texto) {
+    const coincidencia = String(texto || '').match(/\d{4}-\d{2}-\d{2}/);
+    return coincidencia ? coincidencia[0] : null;
+}
+
+// Lee la página del BCV una sola vez: tasas + Fecha Valor.
+// Lanza si falla la petición HTTP (lo maneja cada función exportada).
+async function leerPaginaBcv() {
+
+    const respuesta = await axios.get('https://www.bcv.org.ve/', {
+        httpsAgent,
+        headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+
+    const $ = cheerio.load(respuesta.data);
+
+    return {
+        dolar: parsearNumero($('#dolar .centrado strong').text()),
+        euro: parsearNumero($('#euro .centrado strong').text()),
+        vigente_desde: parsearFechaValor($('[property="dc:date"]').first().attr('content'))
+    };
+
+}
+
 // Última barrera: acceso directo al sitio del BCV
 export async function obtenerBcvScraper() {
 
     try {
 
-        const respuesta = await axios.get('https://www.bcv.org.ve/', {
-            httpsAgent,
-            headers: { 'User-Agent': 'Mozilla/5.0' }
-        });
-
-        const $ = cheerio.load(respuesta.data);
-
-        const dolar = parsearNumero($('#dolar .centrado strong').text());
-        const euro = parsearNumero($('#euro .centrado strong').text());
+        const { dolar, euro, vigente_desde } = await leerPaginaBcv();
 
         if (!esValido(dolar) || !esValido(euro)) {
             sendTelegramAlert({
@@ -49,10 +68,12 @@ export async function obtenerBcvScraper() {
         const cotizaciones = {
             dolar,
             euro,
+            // Fecha valor: la fecha en que rige esta tasa (no la de consulta)
+            vigente_desde,
             actualizado: new Date().toISOString()
         };
 
-        console.log("CONSULTADO DEL SCRAPER DEL BCV.   \nmonedas: \nDolar: ", dolar, "\nEuro: ", euro);
+        console.log("CONSULTADO DEL SCRAPER DEL BCV.   \nmonedas: \nDolar: ", dolar, "\nEuro: ", euro, "\nVigente desde: ", vigente_desde);
 
         return cotizaciones;
 
@@ -65,6 +86,32 @@ export async function obtenerBcvScraper() {
         });
 
         console.log("error en el scraper del BCV. ERROR:", error.message);
+
+        return null;
+
+    }
+
+}
+
+// Tasa PRÓXIMA (aún no vigente) que el BCV ya publica en su página.
+// Alimenta el campo "proxima_bcv" durante el fin de semana / feriados.
+// Job NO crítico: si falla, NO alerta (solo loguea) y devuelve null.
+export async function obtenerBcvProxima() {
+
+    try {
+
+        const { dolar, euro, vigente_desde } = await leerPaginaBcv();
+
+        if (!esValido(dolar) || !esValido(euro) || !vigente_desde) {
+            console.log("⚠️ obtenerBcvProxima: datos inválidos o sin Fecha Valor:", { dolar, euro, vigente_desde });
+            return null;
+        }
+
+        return { dolar, euro, vigente_desde };
+
+    } catch (error) {
+
+        console.log("obtenerBcvProxima: error al leer la página del BCV. ERROR:", error.message);
 
         return null;
 

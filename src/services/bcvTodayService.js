@@ -14,6 +14,8 @@ export async function obtenerBcvToday() {
         const cotizaciones = {
             dolar: data.USD,
             euro: data.EUR,
+            // Fecha valor: la fecha en que rige esta tasa (no la de consulta)
+            vigente_desde: data.effective_date,
             actualizado: data.updated_at
         };
 

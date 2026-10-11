@@ -17,12 +17,15 @@ router.get('/tasas', async (req, res) => {
         const datosBcv = tasas.bcv;
         const datosUsdt = tasas.usdt;
 
+        // Tasa próxima del BCV: solo se expone en fin de semana/feriado, si no -> null
+        const proximaBcv = await calcularProximaBcv(datosBcv);
 
         res.set('Cache-Control', 'public, max-age=200, s-maxage=300');
 
         return res.json({
             oficial: datosBcv,
             cripto: datosUsdt,
+            proxima_bcv: proximaBcv,
             timestamp: new Date().toISOString()
         });
 
@@ -37,6 +40,67 @@ router.get('/tasas', async (req, res) => {
 
 
 export default router;
+
+
+// Fecha de HOY en hora de Venezuela (YYYY-MM-DD)
+function hoyEnCaracas() {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Caracas' }).format(new Date());
+}
+
+// Extrae una fecha YYYY-MM-DD de un texto (ej. "2026-10-09T00:00:00-04:00" -> "2026-10-09")
+function extraerFecha(texto) {
+    const coincidencia = String(texto || '').match(/\d{4}-\d{2}-\d{2}/);
+    return coincidencia ? coincidencia[0] : null;
+}
+
+// Fecha valor de la tasa oficial actual (cuándo entró en vigencia)
+function fechaVigenteOficial(datosBcv) {
+    if (!datosBcv) return null;
+    return extraerFecha(datosBcv.vigente_desde) || extraerFecha(datosBcv.actualizado);
+}
+
+// Diferencia en días entre dos fechas YYYY-MM-DD (hasta - desde)
+function diasEntre(desde, hasta) {
+    const ms = Date.parse(`${hasta}T00:00:00Z`) - Date.parse(`${desde}T00:00:00Z`);
+    return Math.round(ms / 86400000);
+}
+
+// Expone "proxima_bcv" SOLO durante el fin de semana/feriado:
+//   1) la Fecha Valor del BCV todavía no entra en vigencia (es futura respecto a HOY)
+//   2) hay un salto de 2+ días respecto a la tasa oficial vigente (finde/feriado)
+// Fuera de eso devuelve null.
+async function calcularProximaBcv(datosBcv) {
+
+    try {
+
+        const cache = await redis.get('tasas:bcv:proxima');
+        if (!cache) return null;
+
+        const proxima = JSON.parse(cache);
+        if (!proxima || !proxima.vigente_desde) return null;
+
+        const hoy = hoyEnCaracas();
+        const fechaOficial = fechaVigenteOficial(datosBcv);
+
+        const esFutura = diasEntre(hoy, proxima.vigente_desde) >= 1;
+        const haySalto = fechaOficial ? diasEntre(fechaOficial, proxima.vigente_desde) >= 2 : false;
+
+        if (esFutura && haySalto) {
+            return {
+                dolar: proxima.dolar,
+                euro: proxima.euro,
+                vigente_desde: proxima.vigente_desde
+            };
+        }
+
+        return null;
+
+    } catch (error) {
+        console.log("⚠️ calcularProximaBcv:", error.message);
+        return null;
+    }
+
+}
 
 
 export async function ObtenerTasas(){

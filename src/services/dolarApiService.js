@@ -18,6 +18,8 @@ export async function obtenerDolarApi() {
         const cotizaciones = {
             dolar: datosDolar ? datosDolar.promedio : null,
             euro: datosEuro ? datosEuro.promedio : null,
+            // Fecha valor: la fecha en que rige esta tasa (no la de consulta)
+            vigente_desde: datosDolar ? datosDolar.fechaActualizacion : null,
             actualizado: datosDolar ? datosDolar.fechaActualizacion : new Date().toISOString()
         };
 
