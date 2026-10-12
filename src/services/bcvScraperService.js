@@ -35,7 +35,8 @@ async function leerPaginaBcv() {
 
     const respuesta = await axios.get('https://www.bcv.org.ve/', {
         httpsAgent,
-        headers: { 'User-Agent': 'Mozilla/5.0' }
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        timeout: 10000 // si el BCV se cuelga, cortamos a los 10s y cae al catch
     });
 
     const $ = cheerio.load(respuesta.data);
